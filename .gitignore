@@ -1,0 +1,15 @@
+# Build output
+/bin/
+
+# codeg index/cache
+/.codeg/
+*.scip
+
+# Go
+*.test
+*.out
+
+# Editor / OS
+.idea/
+.vscode/
+.DS_Store
