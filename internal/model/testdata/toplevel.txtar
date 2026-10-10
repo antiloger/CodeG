@@ -1,0 +1,125 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- a.go --
+package m
+
+import "fmt"
+
+const Answer = 42
+const _ = 1
+
+var Global = 1
+var _ = fmt.Sprint
+var _ interface{ Pointer() } = (*T)(nil)
+
+type T struct {
+	Name string
+	_    int
+	_    int
+	Embedded
+	*Ptr
+	Anon struct{ X, Y int }
+}
+
+type Embedded struct{ E int }
+type Ptr struct{ P int }
+
+type Reader interface {
+	Read() int
+	fmt.Stringer
+}
+
+func New() *T { return &T{} }
+
+func (t T) Value() string { return t.Name }
+
+func (t *T) Pointer() { t.Name = "x"; t.E = 1; t.P = 2; t.Anon.X = 3 }
+
+func (Embedded) Promoted() {}
+
+func init() {}
+func init() {}
+func _()    {}
+
+func use(r Reader, t *T) {
+	_ = r.Read()
+	t.Promoted()
+	_ = Global + Answer
+}
+
+type Alias = T
+type Copy T
+-- want.txt --
+# example.com/m
+a.go:5:7 Answer -> const  example.com/m.Answer
+a.go:6:7 _ -> const  example.com/m._#0
+a.go:8:5 Global -> var  example.com/m.Global
+a.go:9:5 _ -> var  example.com/m._#1
+a.go:10:5 _ -> var  example.com/m._#2
+a.go:10:18 Pointer -> method  example.com/m._#2.~iface@0.Pointer
+a.go:12:6 T -> type  example.com/m.T
+a.go:13:2 Name -> field  example.com/m.T.Name
+a.go:14:2 _ -> field  example.com/m.T._#1
+a.go:15:2 _ -> field  example.com/m.T._#2
+a.go:16:2 Embedded -> field  example.com/m.T.Embedded
+a.go:17:3 Ptr -> field  example.com/m.T.Ptr
+a.go:18:2 Anon -> field  example.com/m.T.Anon
+a.go:18:15 X -> field  example.com/m.T.Anon.X
+a.go:18:18 Y -> field  example.com/m.T.Anon.Y
+a.go:21:6 Embedded -> type  example.com/m.Embedded
+a.go:21:23 E -> field  example.com/m.Embedded.E
+a.go:22:6 Ptr -> type  example.com/m.Ptr
+a.go:22:18 P -> field  example.com/m.Ptr.P
+a.go:24:6 Reader -> type  example.com/m.Reader
+a.go:25:2 Read -> method  example.com/m.Reader.Read
+a.go:25:9  (implicit) -> ?
+a.go:29:6 New -> func  example.com/m.New
+a.go:29:12  (implicit) -> result  example.com/m.New#result0
+a.go:31:7 t -> param  example.com/m.T.Value#recv
+a.go:31:12 Value -> method  example.com/m.T.Value
+a.go:31:20  (implicit) -> result  example.com/m.T.Value#result0
+a.go:33:7 t -> param  example.com/m.T.Pointer#recv
+a.go:33:13 Pointer -> method  example.com/m.T.Pointer
+a.go:35:7  (implicit) -> param  example.com/m.Embedded.Promoted#recv
+a.go:35:17 Promoted -> method  example.com/m.Embedded.Promoted
+a.go:37:6 init -> func  example.com/m.init#0
+a.go:38:6 init -> func  example.com/m.init#1
+a.go:39:6 _ -> func  example.com/m._#3
+a.go:41:6 use -> func  example.com/m.use
+a.go:41:10 r -> param  example.com/m.use#param0
+a.go:41:20 t -> param  example.com/m.use#param1
+a.go:47:6 Alias -> alias  example.com/m.Alias
+a.go:48:6 Copy -> type  example.com/m.Copy
+use a.go:9:13 Sprint -> func  fmt.Sprint
+use a.go:10:34 T -> type  example.com/m.T
+use a.go:16:2 Embedded -> type  example.com/m.Embedded
+use a.go:17:3 Ptr -> type  example.com/m.Ptr
+use a.go:26:6 Stringer -> type  fmt.Stringer
+use a.go:29:13 T -> type  example.com/m.T
+use a.go:29:25 T -> type  example.com/m.T
+use a.go:31:9 T -> type  example.com/m.T
+use a.go:31:36 t -> param  example.com/m.T.Value#recv
+use a.go:31:38 Name -> field  example.com/m.T.Name
+use a.go:33:10 T -> type  example.com/m.T
+use a.go:33:25 t -> param  example.com/m.T.Pointer#recv
+use a.go:33:27 Name -> field  example.com/m.T.Name
+use a.go:33:39 t -> param  example.com/m.T.Pointer#recv
+use a.go:33:41 E -> field  example.com/m.Embedded.E
+use a.go:33:48 t -> param  example.com/m.T.Pointer#recv
+use a.go:33:50 P -> field  example.com/m.Ptr.P
+use a.go:33:57 t -> param  example.com/m.T.Pointer#recv
+use a.go:33:59 Anon -> field  example.com/m.T.Anon
+use a.go:33:64 X -> field  example.com/m.T.Anon.X
+use a.go:35:7 Embedded -> type  example.com/m.Embedded
+use a.go:41:12 Reader -> type  example.com/m.Reader
+use a.go:41:23 T -> type  example.com/m.T
+use a.go:42:6 r -> param  example.com/m.use#param0
+use a.go:42:8 Read -> method  example.com/m.Reader.Read
+use a.go:43:2 t -> param  example.com/m.use#param1
+use a.go:43:4 Promoted -> method  example.com/m.Embedded.Promoted
+use a.go:44:6 Global -> var  example.com/m.Global
+use a.go:44:15 Answer -> const  example.com/m.Answer
+use a.go:47:14 T -> type  example.com/m.T
+use a.go:48:11 T -> type  example.com/m.T

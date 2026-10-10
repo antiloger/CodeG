@@ -1,0 +1,170 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- lib/lib.go --
+package lib
+
+import "io"
+
+type Base struct{ ID int }
+
+func (b *Base) Touch() {}
+func (b Base) Name() string { return "" }
+
+type Wrapper struct {
+	Base
+	Extra struct{ Deep struct{ N int } }
+}
+
+type Store[K comparable, V any] struct{ m map[K]V }
+
+func (s *Store[K, V]) Put(k K, v V) {}
+
+type ReadCloser interface {
+	io.Reader
+	Close() error
+}
+
+type Cfg struct{ A int }
+type Cfg2 Cfg
+
+var Default = struct{ Port int }{80}
+
+func Apply[T interface{ Set(int) }](t T) { t.Set(1) }
+-- app/app.go --
+package app
+
+import (
+	"errors"
+
+	"example.com/m/lib"
+)
+
+type Mine struct {
+	*lib.Wrapper
+}
+
+type setter struct{}
+
+func (setter) Set(int) {}
+
+func run(rc lib.ReadCloser, m Mine) error {
+	m.Touch()
+	_ = m.Name()
+	_ = m.ID
+	_ = m.Extra.Deep.N
+	s := lib.Store[string, int]{}
+	s.Put("a", 1)
+	_ = rc.Close()
+	_, _ = rc.Read(nil)
+	c := lib.Cfg2{A: 1}
+	_ = c.A
+	_ = lib.Default.Port
+	lib.Apply(setter{})
+	err := errors.New("x")
+	return err
+}
+
+func errMethod(e error) string { return e.Error() }
+-- want.txt --
+# example.com/m/app
+app.go:9:6 Mine -> type  example.com/m/app.Mine
+app.go:10:7 Wrapper -> field  example.com/m/app.Mine.Wrapper
+app.go:13:6 setter -> type  example.com/m/app.setter
+app.go:15:7  (implicit) -> param  example.com/m/app.setter.Set#recv
+app.go:15:15 Set -> method  example.com/m/app.setter.Set
+app.go:15:19  (implicit) -> param  example.com/m/app.setter.Set#param0
+app.go:17:6 run -> func  example.com/m/app.run
+app.go:17:10 rc -> param  example.com/m/app.run#param0
+app.go:17:29 m -> param  example.com/m/app.run#param1
+app.go:17:37  (implicit) -> result  example.com/m/app.run#result0
+app.go:22:2 s -> local  example.com/m/app.run::s@0
+app.go:26:2 c -> local  example.com/m/app.run::c@0
+app.go:30:2 err -> local  example.com/m/app.run::err@0
+app.go:34:6 errMethod -> func  example.com/m/app.errMethod
+app.go:34:16 e -> param  example.com/m/app.errMethod#param0
+app.go:34:25  (implicit) -> result  example.com/m/app.errMethod#result0
+use app.go:10:7 Wrapper -> type  example.com/m/lib.Wrapper
+use app.go:15:7 setter -> type  example.com/m/app.setter
+use app.go:17:17 ReadCloser -> type  example.com/m/lib.ReadCloser
+use app.go:17:31 Mine -> type  example.com/m/app.Mine
+use app.go:18:2 m -> param  example.com/m/app.run#param1
+use app.go:18:4 Touch -> method  example.com/m/lib.Base.Touch
+use app.go:19:6 m -> param  example.com/m/app.run#param1
+use app.go:19:8 Name -> method  example.com/m/lib.Base.Name
+use app.go:20:6 m -> param  example.com/m/app.run#param1
+use app.go:20:8 ID -> field  example.com/m/lib.Base.ID
+use app.go:21:6 m -> param  example.com/m/app.run#param1
+use app.go:21:8 Extra -> field  example.com/m/lib.Wrapper.Extra
+use app.go:21:14 Deep -> field  example.com/m/lib.Wrapper.Extra.Deep
+use app.go:21:19 N -> field  example.com/m/lib.Wrapper.Extra.Deep.N
+use app.go:22:11 Store -> type  example.com/m/lib.Store
+use app.go:23:2 s -> local  example.com/m/app.run::s@0
+use app.go:23:4 Put -> method  example.com/m/lib.Store.Put
+use app.go:24:6 rc -> param  example.com/m/app.run#param0
+use app.go:24:9 Close -> method  example.com/m/lib.ReadCloser.Close
+use app.go:25:9 rc -> param  example.com/m/app.run#param0
+use app.go:25:12 Read -> method  io.Reader.Read
+use app.go:26:11 Cfg2 -> type  example.com/m/lib.Cfg2
+use app.go:26:16 A -> field  example.com/m/lib.Cfg.A
+use app.go:27:6 c -> local  example.com/m/app.run::c@0
+use app.go:27:8 A -> field  example.com/m/lib.Cfg.A
+use app.go:28:10 Default -> var  example.com/m/lib.Default
+use app.go:28:18 Port -> field  example.com/m/lib.~Default.F0
+use app.go:29:6 Apply -> func  example.com/m/lib.Apply
+use app.go:29:12 setter -> type  example.com/m/app.setter
+use app.go:30:16 New -> func  errors.New
+use app.go:31:9 err -> local  example.com/m/app.run::err@0
+use app.go:34:41 e -> param  example.com/m/app.errMethod#param0
+# example.com/m/lib
+lib.go:5:6 Base -> type  example.com/m/lib.Base
+lib.go:5:19 ID -> field  example.com/m/lib.Base.ID
+lib.go:7:7 b -> param  example.com/m/lib.Base.Touch#recv
+lib.go:7:16 Touch -> method  example.com/m/lib.Base.Touch
+lib.go:8:7 b -> param  example.com/m/lib.Base.Name#recv
+lib.go:8:15 Name -> method  example.com/m/lib.Base.Name
+lib.go:8:22  (implicit) -> result  example.com/m/lib.Base.Name#result0
+lib.go:10:6 Wrapper -> type  example.com/m/lib.Wrapper
+lib.go:11:2 Base -> field  example.com/m/lib.Wrapper.Base
+lib.go:12:2 Extra -> field  example.com/m/lib.Wrapper.Extra
+lib.go:12:16 Deep -> field  example.com/m/lib.Wrapper.Extra.Deep
+lib.go:12:29 N -> field  example.com/m/lib.Wrapper.Extra.Deep.N
+lib.go:15:6 Store -> type  example.com/m/lib.Store
+lib.go:15:12 K -> type_param  example.com/m/lib.Store[K]
+lib.go:15:26 V -> type_param  example.com/m/lib.Store[V]
+lib.go:15:41 m -> field  example.com/m/lib.Store.m
+lib.go:17:7 s -> param  example.com/m/lib.Store.Put#recv
+lib.go:17:16 K -> type_param  example.com/m/lib.Store.Put[K]
+lib.go:17:19 V -> type_param  example.com/m/lib.Store.Put[V]
+lib.go:17:23 Put -> method  example.com/m/lib.Store.Put
+lib.go:17:27 k -> param  example.com/m/lib.Store.Put#param0
+lib.go:17:32 v -> param  example.com/m/lib.Store.Put#param1
+lib.go:19:6 ReadCloser -> type  example.com/m/lib.ReadCloser
+lib.go:21:2 Close -> method  example.com/m/lib.ReadCloser.Close
+lib.go:21:10  (implicit) -> ?
+lib.go:24:6 Cfg -> type  example.com/m/lib.Cfg
+lib.go:24:18 A -> field  example.com/m/lib.Cfg.A
+lib.go:25:6 Cfg2 -> type  example.com/m/lib.Cfg2
+lib.go:27:5 Default -> var  example.com/m/lib.Default
+lib.go:27:23 Port -> field  example.com/m/lib.~Default.F0
+lib.go:29:6 Apply -> func  example.com/m/lib.Apply
+lib.go:29:12 T -> type_param  example.com/m/lib.Apply[T]
+lib.go:29:25 Set -> method  example.com/m/lib.~Apply.T0CM0
+lib.go:29:29  (implicit) -> ?
+lib.go:29:37 t -> param  example.com/m/lib.Apply#param0
+use lib.go:7:10 Base -> type  example.com/m/lib.Base
+use lib.go:8:9 Base -> type  example.com/m/lib.Base
+use lib.go:11:2 Base -> type  example.com/m/lib.Base
+use lib.go:15:47 K -> type_param  example.com/m/lib.Store[K]
+use lib.go:15:49 V -> type_param  example.com/m/lib.Store[V]
+use lib.go:17:10 Store -> type  example.com/m/lib.Store
+use lib.go:17:16 K -> type_param  example.com/m/lib.Store.Put[K]
+use lib.go:17:19 V -> type_param  example.com/m/lib.Store.Put[V]
+use lib.go:17:29 K -> type_param  example.com/m/lib.Store.Put[K]
+use lib.go:17:34 V -> type_param  example.com/m/lib.Store.Put[V]
+use lib.go:20:5 Reader -> type  io.Reader
+use lib.go:25:11 Cfg -> type  example.com/m/lib.Cfg
+use lib.go:29:39 T -> type_param  example.com/m/lib.Apply[T]
+use lib.go:29:44 t -> param  example.com/m/lib.Apply#param0
+use lib.go:29:46 Set -> method  example.com/m/lib.~Apply.T0CM0

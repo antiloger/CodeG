@@ -1,0 +1,218 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- l.go --
+package m
+
+var handler = func(a int) int {
+	x := a
+	return x
+}
+
+var pair1, pair2 = func() {}, func() {}
+
+func shadow(x int, _ string, y ...int) (n int, err error) {
+	x2 := x
+	if x := x + 1; x > 0 {
+		x := x * 2
+		_ = x
+	}
+	for i := 0; i < 3; i++ {
+		i := i
+		_ = i
+	}
+	{
+		x := "inner"
+		_ = x
+	}
+	_ = x2
+	return
+}
+
+func closures() {
+	a := 1
+	f := func(p int) func() int {
+		b := p + a
+		return func() int {
+			b := b + 1
+			return b
+		}
+	}
+	g := func() {}
+	_, _ = f, g
+	defer func() {}()
+	go func() { a++ }()
+}
+
+func typeSwitch(v any) {
+	switch x := v.(type) {
+	case int:
+		_ = x
+	case string, bool:
+		_ = x
+	default:
+		_ = x
+	}
+}
+
+func localTypes() {
+	type T struct {
+		A int
+		B string
+	}
+	type I interface{ M() int }
+	const c = 3
+	type T2 = T
+	t := T{A: c}
+	_ = t.A
+	var i I
+	_ = i.M()
+	anon := struct{ Q, R int }{1, 2}
+	_ = anon.Q
+	{
+		type T struct{ A bool }
+		_ = T{}.A
+	}
+}
+
+func labels(xs [][]int) int {
+	n := 0
+outer:
+	for _, row := range xs {
+		for _, v := range row {
+			if v < 0 {
+				continue outer
+			}
+			if v == 0 {
+				goto done
+			}
+			n += v
+		}
+	}
+done:
+	return n
+}
+
+func multi() {
+	x := 1
+	_ = x
+}
+
+func multi2() {
+	x := 2
+	_ = x
+}
+-- want.txt --
+# example.com/m
+l.go:3:5 handler -> var  example.com/m.handler
+l.go:3:20 a -> param  example.com/m.handler$0#param0
+l.go:3:27  (implicit) -> result  example.com/m.handler$0#result0
+l.go:4:2 x -> local  example.com/m.handler$0::x@0
+l.go:8:5 pair1 -> var  example.com/m.pair1
+l.go:8:12 pair2 -> var  example.com/m.pair2
+l.go:10:6 shadow -> func  example.com/m.shadow
+l.go:10:13 x -> param  example.com/m.shadow#param0
+l.go:10:20 _ -> param  example.com/m.shadow#param1
+l.go:10:30 y -> param  example.com/m.shadow#param2
+l.go:10:41 n -> result  example.com/m.shadow#result0
+l.go:10:48 err -> result  example.com/m.shadow#result1
+l.go:11:2 x2 -> local  example.com/m.shadow::x2@0
+l.go:12:5 x -> local  example.com/m.shadow::x@0
+l.go:13:3 x -> local  example.com/m.shadow::x@1
+l.go:16:6 i -> local  example.com/m.shadow::i@0
+l.go:17:3 i -> local  example.com/m.shadow::i@1
+l.go:21:3 x -> local  example.com/m.shadow::x@2
+l.go:28:6 closures -> func  example.com/m.closures
+l.go:29:2 a -> local  example.com/m.closures::a@0
+l.go:30:2 f -> local  example.com/m.closures::f@0
+l.go:30:12 p -> param  example.com/m.closures$0#param0
+l.go:30:19  (implicit) -> result  example.com/m.closures$0#result0
+l.go:30:26  (implicit) -> ?
+l.go:31:3 b -> local  example.com/m.closures$0::b@0
+l.go:32:17  (implicit) -> result  example.com/m.closures$0$0#result0
+l.go:33:4 b -> local  example.com/m.closures$0$0::b@0
+l.go:37:2 g -> local  example.com/m.closures::g@0
+l.go:43:6 typeSwitch -> func  example.com/m.typeSwitch
+l.go:43:17 v -> param  example.com/m.typeSwitch#param0
+l.go:45:2 x (implicit) -> local  example.com/m.typeSwitch::x@0
+l.go:47:2 x (implicit) -> local  example.com/m.typeSwitch::x@0
+l.go:49:2 x (implicit) -> local  example.com/m.typeSwitch::x@0
+l.go:54:6 localTypes -> func  example.com/m.localTypes
+l.go:55:7 T -> type  example.com/m.localTypes.T@0
+l.go:56:3 A -> field  example.com/m.localTypes.T@0.A
+l.go:57:3 B -> field  example.com/m.localTypes.T@0.B
+l.go:59:7 I -> type  example.com/m.localTypes.I@0
+l.go:59:20 M -> method  example.com/m.localTypes.I@0.M
+l.go:59:24  (implicit) -> ?
+l.go:60:8 c -> const  example.com/m.localTypes.c@0
+l.go:61:7 T2 -> alias  example.com/m.localTypes.T2@0
+l.go:62:2 t -> local  example.com/m.localTypes::t@0
+l.go:64:6 i -> local  example.com/m.localTypes::i@0
+l.go:66:2 anon -> local  example.com/m.localTypes::anon@0
+l.go:66:18 Q -> field  example.com/m.localTypes.~struct@0.Q
+l.go:66:21 R -> field  example.com/m.localTypes.~struct@0.R
+l.go:69:8 T -> type  example.com/m.localTypes.T@1
+l.go:69:18 A -> field  example.com/m.localTypes.T@1.A
+l.go:74:6 labels -> func  example.com/m.labels
+l.go:74:13 xs -> param  example.com/m.labels#param0
+l.go:74:25  (implicit) -> result  example.com/m.labels#result0
+l.go:75:2 n -> local  example.com/m.labels::n@0
+l.go:76:1 outer -> label  example.com/m.labels#label:outer
+l.go:77:6 _ -> local  example.com/m.labels::_@0
+l.go:77:9 row -> local  example.com/m.labels::row@0
+l.go:78:7 _ -> local  example.com/m.labels::_@1
+l.go:78:10 v -> local  example.com/m.labels::v@0
+l.go:88:1 done -> label  example.com/m.labels#label:done
+l.go:92:6 multi -> func  example.com/m.multi
+l.go:93:2 x -> local  example.com/m.multi::x@0
+l.go:97:6 multi2 -> func  example.com/m.multi2
+l.go:98:2 x -> local  example.com/m.multi2::x@0
+use l.go:4:7 a -> param  example.com/m.handler$0#param0
+use l.go:5:9 x -> local  example.com/m.handler$0::x@0
+use l.go:11:8 x -> param  example.com/m.shadow#param0
+use l.go:12:10 x -> param  example.com/m.shadow#param0
+use l.go:12:17 x -> local  example.com/m.shadow::x@0
+use l.go:13:8 x -> local  example.com/m.shadow::x@0
+use l.go:14:7 x -> local  example.com/m.shadow::x@1
+use l.go:16:14 i -> local  example.com/m.shadow::i@0
+use l.go:16:21 i -> local  example.com/m.shadow::i@0
+use l.go:17:8 i -> local  example.com/m.shadow::i@0
+use l.go:18:7 i -> local  example.com/m.shadow::i@1
+use l.go:22:7 x -> local  example.com/m.shadow::x@2
+use l.go:24:6 x2 -> local  example.com/m.shadow::x2@0
+use l.go:31:8 p -> param  example.com/m.closures$0#param0
+use l.go:31:12 a -> local  example.com/m.closures::a@0
+use l.go:33:9 b -> local  example.com/m.closures$0::b@0
+use l.go:34:11 b -> local  example.com/m.closures$0$0::b@0
+use l.go:38:9 f -> local  example.com/m.closures::f@0
+use l.go:38:12 g -> local  example.com/m.closures::g@0
+use l.go:40:14 a -> local  example.com/m.closures::a@0
+use l.go:44:14 v -> param  example.com/m.typeSwitch#param0
+use l.go:46:7 x -> local  example.com/m.typeSwitch::x@0
+use l.go:48:7 x -> local  example.com/m.typeSwitch::x@0
+use l.go:50:7 x -> local  example.com/m.typeSwitch::x@0
+use l.go:61:12 T -> type  example.com/m.localTypes.T@0
+use l.go:62:7 T -> type  example.com/m.localTypes.T@0
+use l.go:62:9 A -> field  example.com/m.localTypes.T@0.A
+use l.go:62:12 c -> const  example.com/m.localTypes.c@0
+use l.go:63:6 t -> local  example.com/m.localTypes::t@0
+use l.go:63:8 A -> field  example.com/m.localTypes.T@0.A
+use l.go:64:8 I -> type  example.com/m.localTypes.I@0
+use l.go:65:6 i -> local  example.com/m.localTypes::i@0
+use l.go:65:8 M -> method  example.com/m.localTypes.I@0.M
+use l.go:67:6 anon -> local  example.com/m.localTypes::anon@0
+use l.go:67:11 Q -> field  example.com/m.localTypes.~struct@0.Q
+use l.go:70:7 T -> type  example.com/m.localTypes.T@1
+use l.go:70:11 A -> field  example.com/m.localTypes.T@1.A
+use l.go:77:22 xs -> param  example.com/m.labels#param0
+use l.go:78:21 row -> local  example.com/m.labels::row@0
+use l.go:79:7 v -> local  example.com/m.labels::v@0
+use l.go:80:14 outer -> label  example.com/m.labels#label:outer
+use l.go:82:7 v -> local  example.com/m.labels::v@0
+use l.go:83:10 done -> label  example.com/m.labels#label:done
+use l.go:85:4 n -> local  example.com/m.labels::n@0
+use l.go:85:9 v -> local  example.com/m.labels::v@0
+use l.go:89:9 n -> local  example.com/m.labels::n@0
+use l.go:94:6 x -> local  example.com/m.multi::x@0
+use l.go:99:6 x -> local  example.com/m.multi2::x@0

@@ -1,0 +1,96 @@
+// Baseline schema for the milestone-4 format benchmark. It mirrors
+// model.PackageFacts with the same string/key tables and index references the
+// hand-written format uses, so the comparison measures the encoding, not the
+// schema. Only benchmark tests import it. The decision is in ../../FORMAT.md.
+syntax = "proto3";
+
+package pbbench;
+
+option go_package = "codeg/internal/index/internal/pbbench";
+
+message Key {
+  uint32 pkg = 1;
+  uint32 name = 2;
+}
+
+message Range {
+  int32 file = 1;
+  int32 start = 2;
+  int32 end = 3;
+  int32 line = 4;
+  int32 col = 5;
+  int32 end_line = 6;
+  int32 end_col = 7;
+}
+
+message Symbol {
+  uint32 key = 1;
+  uint32 kind = 2;
+  bool exported = 3;
+  uint32 name = 4;
+  uint32 detail = 5;
+  Range pos = 6;
+  Range decl = 7;
+}
+
+message Occurrence {
+  Range range = 1;
+  uint32 symbol = 2;
+  uint32 role = 3;
+  uint32 dispatch = 4;
+  uint32 flags = 5;
+  uint32 enclosing = 6;
+  int32 call = 7;
+  int32 arg_of = 8;
+  int32 arg_index = 9;
+  uint32 flow_to = 10;
+  uint32 type_args = 11;
+}
+
+message Edge {
+  uint32 kind = 1;
+  uint32 from = 2;
+  uint32 to = 3;
+}
+
+message MethodEntry {
+  uint32 name = 1;
+  uint32 sig = 2;
+  bool ptr_recv = 3;
+}
+
+message MethodSet {
+  uint32 type = 1;
+  bool interface = 2;
+  repeated MethodEntry methods = 3;
+}
+
+message External {
+  uint32 key = 1;
+  uint32 kind = 2;
+  uint32 name = 3;
+  uint32 detail = 4;
+  uint32 module = 5;
+  uint32 version = 6;
+}
+
+message File {
+  uint32 path = 1;
+  bool generated = 2;
+  bool test = 3;
+}
+
+message Facts {
+  uint32 path = 1;
+  uint32 name = 2;
+  bool has_errors = 3;
+  repeated string strings = 4;
+  repeated Key keys = 5;
+  repeated File files = 6;
+  repeated uint32 imports = 7;
+  repeated Symbol symbols = 8;
+  repeated Occurrence occurrences = 9;
+  repeated Edge edges = 10;
+  repeated MethodSet method_sets = 11;
+  repeated External externals = 12;
+}

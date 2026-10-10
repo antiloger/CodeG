@@ -1,0 +1,164 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- g.go --
+package m
+
+type Box[T any] struct {
+	Val  T
+	Next *Box[T]
+}
+
+func (b *Box[T]) Get() T { return b.Val }
+
+func (b Box[U]) Swap(other Box[U]) Box[U] { return other }
+
+func (b Box[_]) Blank() {}
+
+func Map[A, B any](xs []A, f func(A) B) []B {
+	var out []B
+	for _, x := range xs {
+		out = append(out, f(x))
+	}
+	return out
+}
+
+func Pair[_, _ any]() {}
+
+type Number interface{ ~int | ~float64 }
+
+func Sum[N Number](xs ...N) N {
+	var s N
+	for _, x := range xs {
+		s += x
+	}
+	return s
+}
+
+type Ord[T interface{ Less(T) bool }] struct{ v T }
+
+type IntBox = Box[int]
+
+type GAlias[T any] = Box[T]
+
+func use() {
+	b := Box[int]{Val: 1}
+	_ = b.Get()
+	_ = b.Swap(b)
+	_ = Map[int, string](nil, nil)
+	_ = Sum(1, 2, 3)
+	var ib IntBox
+	_ = ib.Val
+	var ga GAlias[string]
+	_ = ga.Next
+}
+-- want.txt --
+# example.com/m
+g.go:3:6 Box -> type  example.com/m.Box
+g.go:3:10 T -> type_param  example.com/m.Box[T]
+g.go:4:2 Val -> field  example.com/m.Box.Val
+g.go:5:2 Next -> field  example.com/m.Box.Next
+g.go:8:7 b -> param  example.com/m.Box.Get#recv
+g.go:8:14 T -> type_param  example.com/m.Box.Get[T]
+g.go:8:18 Get -> method  example.com/m.Box.Get
+g.go:8:24  (implicit) -> result  example.com/m.Box.Get#result0
+g.go:10:7 b -> param  example.com/m.Box.Swap#recv
+g.go:10:13 U -> type_param  example.com/m.Box.Swap[U]
+g.go:10:17 Swap -> method  example.com/m.Box.Swap
+g.go:10:22 other -> param  example.com/m.Box.Swap#param0
+g.go:10:36  (implicit) -> result  example.com/m.Box.Swap#result0
+g.go:12:7 b -> param  example.com/m.Box.Blank#recv
+g.go:12:13 _ -> type_param  example.com/m.Box.Blank[_#0]
+g.go:12:17 Blank -> method  example.com/m.Box.Blank
+g.go:14:6 Map -> func  example.com/m.Map
+g.go:14:10 A -> type_param  example.com/m.Map[A]
+g.go:14:13 B -> type_param  example.com/m.Map[B]
+g.go:14:20 xs -> param  example.com/m.Map#param0
+g.go:14:28 f -> param  example.com/m.Map#param1
+g.go:14:35  (implicit) -> ?
+g.go:14:38  (implicit) -> ?
+g.go:14:41  (implicit) -> result  example.com/m.Map#result0
+g.go:15:6 out -> local  example.com/m.Map::out@0
+g.go:16:6 _ -> local  example.com/m.Map::_@0
+g.go:16:9 x -> local  example.com/m.Map::x@0
+g.go:22:6 Pair -> func  example.com/m.Pair
+g.go:22:11 _ -> type_param  example.com/m.Pair[_#0]
+g.go:22:14 _ -> type_param  example.com/m.Pair[_#1]
+g.go:24:6 Number -> type  example.com/m.Number
+g.go:26:6 Sum -> func  example.com/m.Sum
+g.go:26:10 N -> type_param  example.com/m.Sum[N]
+g.go:26:20 xs -> param  example.com/m.Sum#param0
+g.go:26:29  (implicit) -> result  example.com/m.Sum#result0
+g.go:27:6 s -> local  example.com/m.Sum::s@0
+g.go:28:6 _ -> local  example.com/m.Sum::_@0
+g.go:28:9 x -> local  example.com/m.Sum::x@0
+g.go:34:6 Ord -> type  example.com/m.Ord
+g.go:34:10 T -> type_param  example.com/m.Ord[T]
+g.go:34:23 Less -> method  example.com/m.~Ord.T0CM0
+g.go:34:28  (implicit) -> ?
+g.go:34:31  (implicit) -> ?
+g.go:34:47 v -> field  example.com/m.Ord.v
+g.go:36:6 IntBox -> alias  example.com/m.IntBox
+g.go:38:6 GAlias -> alias  example.com/m.GAlias
+g.go:38:13 T -> type_param  example.com/m.GAlias[T]
+g.go:40:6 use -> func  example.com/m.use
+g.go:41:2 b -> local  example.com/m.use::b@0
+g.go:46:6 ib -> local  example.com/m.use::ib@0
+g.go:48:6 ga -> local  example.com/m.use::ga@0
+use g.go:4:7 T -> type_param  example.com/m.Box[T]
+use g.go:5:8 Box -> type  example.com/m.Box
+use g.go:5:12 T -> type_param  example.com/m.Box[T]
+use g.go:8:10 Box -> type  example.com/m.Box
+use g.go:8:14 T -> type_param  example.com/m.Box.Get[T]
+use g.go:8:24 T -> type_param  example.com/m.Box.Get[T]
+use g.go:8:35 b -> param  example.com/m.Box.Get#recv
+use g.go:8:37 Val -> field  example.com/m.Box.Val
+use g.go:10:9 Box -> type  example.com/m.Box
+use g.go:10:13 U -> type_param  example.com/m.Box.Swap[U]
+use g.go:10:28 Box -> type  example.com/m.Box
+use g.go:10:32 U -> type_param  example.com/m.Box.Swap[U]
+use g.go:10:36 Box -> type  example.com/m.Box
+use g.go:10:40 U -> type_param  example.com/m.Box.Swap[U]
+use g.go:10:52 other -> param  example.com/m.Box.Swap#param0
+use g.go:12:9 Box -> type  example.com/m.Box
+use g.go:12:13 _ -> type_param  example.com/m.Box.Blank[_#0]
+use g.go:14:25 A -> type_param  example.com/m.Map[A]
+use g.go:14:35 A -> type_param  example.com/m.Map[A]
+use g.go:14:38 B -> type_param  example.com/m.Map[B]
+use g.go:14:43 B -> type_param  example.com/m.Map[B]
+use g.go:15:12 B -> type_param  example.com/m.Map[B]
+use g.go:16:20 xs -> param  example.com/m.Map#param0
+use g.go:17:3 out -> local  example.com/m.Map::out@0
+use g.go:17:16 out -> local  example.com/m.Map::out@0
+use g.go:17:21 f -> param  example.com/m.Map#param1
+use g.go:17:23 x -> local  example.com/m.Map::x@0
+use g.go:19:9 out -> local  example.com/m.Map::out@0
+use g.go:26:12 Number -> type  example.com/m.Number
+use g.go:26:26 N -> type_param  example.com/m.Sum[N]
+use g.go:26:29 N -> type_param  example.com/m.Sum[N]
+use g.go:27:8 N -> type_param  example.com/m.Sum[N]
+use g.go:28:20 xs -> param  example.com/m.Sum#param0
+use g.go:29:3 s -> local  example.com/m.Sum::s@0
+use g.go:29:8 x -> local  example.com/m.Sum::x@0
+use g.go:31:9 s -> local  example.com/m.Sum::s@0
+use g.go:34:28 T -> type_param  example.com/m.Ord[T]
+use g.go:34:49 T -> type_param  example.com/m.Ord[T]
+use g.go:36:15 Box -> type  example.com/m.Box
+use g.go:38:22 Box -> type  example.com/m.Box
+use g.go:38:26 T -> type_param  example.com/m.GAlias[T]
+use g.go:41:7 Box -> type  example.com/m.Box
+use g.go:41:16 Val -> field  example.com/m.Box.Val
+use g.go:42:6 b -> local  example.com/m.use::b@0
+use g.go:42:8 Get -> method  example.com/m.Box.Get
+use g.go:43:6 b -> local  example.com/m.use::b@0
+use g.go:43:8 Swap -> method  example.com/m.Box.Swap
+use g.go:43:13 b -> local  example.com/m.use::b@0
+use g.go:44:6 Map -> func  example.com/m.Map
+use g.go:45:6 Sum -> func  example.com/m.Sum
+use g.go:46:9 IntBox -> alias  example.com/m.IntBox
+use g.go:47:6 ib -> local  example.com/m.use::ib@0
+use g.go:47:9 Val -> field  example.com/m.Box.Val
+use g.go:48:9 GAlias -> alias  example.com/m.GAlias
+use g.go:49:6 ga -> local  example.com/m.use::ga@0
+use g.go:49:9 Next -> field  example.com/m.Box.Next

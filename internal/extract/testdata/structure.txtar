@@ -1,0 +1,220 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- s.go --
+package m
+
+import (
+	"fmt"
+	str "strings"
+)
+
+type Shape interface {
+	Area() float64
+	fmt.Stringer
+}
+
+type Base struct{ ID int }
+
+func (b *Base) SetID(id int) { b.ID = id }
+
+type Circle struct {
+	Base
+	R    float64
+	Meta struct{ Tag string }
+}
+
+func (c Circle) Area() float64  { return c.R }
+func (c Circle) String() string { return str.ToUpper("circle") }
+
+type Alias = Circle
+
+type List[T any] struct{ items []T }
+
+func (l *List[T]) Add(v T) { l.items = append(l.items, v) }
+
+const Pi = 3.14
+
+var Default Shape = Circle{}
+
+func Describe(s Shape, extra ...string) (desc string, err error) {
+	type local struct{ n int }
+	f := func(x int) int { return x }
+	_ = f
+	return s.String(), nil
+}
+-- want.txt --
+package example.com/m (m)
+imports fmt
+imports strings
+file s.go
+-- symbols
+package example.com/m
+file example.com/m.@s.go
+alias example.com/m.Alias  = example.com/m.Circle  @s.go:26:6  decl=26-26
+type example.com/m.Base  struct  @s.go:13:6  decl=13-13
+field example.com/m.Base.ID  int  @s.go:13:19
+method example.com/m.Base.SetID  func(id int)  @s.go:15:16  decl=15-15
+param example.com/m.Base.SetID#param0  int  @s.go:15:22
+param example.com/m.Base.SetID#recv  *example.com/m.Base  @s.go:15:7
+type example.com/m.Circle  struct  @s.go:17:6  decl=17-21
+method example.com/m.Circle.Area  func() float64  @s.go:23:17  decl=23-23
+param example.com/m.Circle.Area#recv  example.com/m.Circle  @s.go:23:7
+result example.com/m.Circle.Area#result0  float64
+field example.com/m.Circle.Base  example.com/m.Base  @s.go:18:2
+field example.com/m.Circle.Meta  struct{Tag string}  @s.go:20:2
+field example.com/m.Circle.Meta.Tag  string  @s.go:20:15
+field example.com/m.Circle.R  float64  @s.go:19:2
+method example.com/m.Circle.String  func() string  @s.go:24:17  decl=24-24
+param example.com/m.Circle.String#recv  example.com/m.Circle  @s.go:24:7
+result example.com/m.Circle.String#result0  string
+var example.com/m.Default  example.com/m.Shape  @s.go:34:5  decl=34-34
+func example.com/m.Describe  func(s example.com/m.Shape, extra ...string) (desc string, err error)  @s.go:36:6  decl=36-41
+param example.com/m.Describe#param0  example.com/m.Shape  @s.go:36:15
+param example.com/m.Describe#param1  []string  @s.go:36:24
+result example.com/m.Describe#result0  string  @s.go:36:42
+result example.com/m.Describe#result1  error  @s.go:36:55
+func_lit example.com/m.Describe$0  func(x int) int  @s.go:38:7  decl=38-38
+param example.com/m.Describe$0#param0  int  @s.go:38:12
+result example.com/m.Describe$0#result0  int
+type example.com/m.Describe.local@0  struct  @s.go:37:7  decl=37-37
+field example.com/m.Describe.local@0.n  int  @s.go:37:21
+local example.com/m.Describe::f@0  func(x int) int  @s.go:38:2
+type example.com/m.List  struct  @s.go:28:6  decl=28-28
+method example.com/m.List.Add  func(v T)  @s.go:30:19  decl=30-30
+param example.com/m.List.Add#param0  T  @s.go:30:23
+param example.com/m.List.Add#recv  *example.com/m.List[T]  @s.go:30:7
+type_param example.com/m.List.Add[T]  any  @s.go:30:15
+field example.com/m.List.items  []T  @s.go:28:26
+type_param example.com/m.List[T]  any  @s.go:28:11
+const example.com/m.Pi  untyped float  @s.go:32:7  decl=32-32
+type example.com/m.Shape  interface  @s.go:8:6  decl=8-11
+method example.com/m.Shape.Area  func() float64  @s.go:9:2
+-- edges
+contains example.com/m -> example.com/m.Alias
+contains example.com/m -> example.com/m.Base
+contains example.com/m -> example.com/m.Circle
+contains example.com/m -> example.com/m.Default
+contains example.com/m -> example.com/m.Describe
+contains example.com/m -> example.com/m.List
+contains example.com/m -> example.com/m.Pi
+contains example.com/m -> example.com/m.Shape
+contains example.com/m.Describe -> example.com/m.Describe$0
+contains example.com/m.Describe -> example.com/m.Describe.local@0
+contains example.com/m.Describe -> example.com/m.Describe::f@0
+has_param example.com/m.Base.SetID -> example.com/m.Base.SetID#param0
+has_param example.com/m.Base.SetID -> example.com/m.Base.SetID#recv
+has_param example.com/m.Circle.Area -> example.com/m.Circle.Area#recv
+has_param example.com/m.Circle.String -> example.com/m.Circle.String#recv
+has_param example.com/m.Describe -> example.com/m.Describe#param0
+has_param example.com/m.Describe -> example.com/m.Describe#param1
+has_param example.com/m.Describe$0 -> example.com/m.Describe$0#param0
+has_param example.com/m.List.Add -> example.com/m.List.Add#param0
+has_param example.com/m.List.Add -> example.com/m.List.Add#recv
+has_result example.com/m.Circle.Area -> example.com/m.Circle.Area#result0
+has_result example.com/m.Circle.String -> example.com/m.Circle.String#result0
+has_result example.com/m.Describe -> example.com/m.Describe#result0
+has_result example.com/m.Describe -> example.com/m.Describe#result1
+has_result example.com/m.Describe$0 -> example.com/m.Describe$0#result0
+has_field example.com/m.Base -> example.com/m.Base.ID
+has_field example.com/m.Circle -> example.com/m.Circle.Base
+has_field example.com/m.Circle -> example.com/m.Circle.Meta
+has_field example.com/m.Circle -> example.com/m.Circle.R
+has_field example.com/m.Circle.Meta -> example.com/m.Circle.Meta.Tag
+has_field example.com/m.Describe.local@0 -> example.com/m.Describe.local@0.n
+has_field example.com/m.List -> example.com/m.List.items
+has_method example.com/m.Base -> example.com/m.Base.SetID
+has_method example.com/m.Circle -> example.com/m.Circle.Area
+has_method example.com/m.Circle -> example.com/m.Circle.String
+has_method example.com/m.List -> example.com/m.List.Add
+has_method example.com/m.Shape -> example.com/m.Shape.Area
+embeds example.com/m.Circle -> example.com/m.Base
+embeds example.com/m.Shape -> fmt.Stringer
+type_param example.com/m.List -> example.com/m.List[T]
+type_param example.com/m.List.Add -> example.com/m.List.Add[T]
+alias_of example.com/m.Alias -> example.com/m.Circle
+file example.com/m -> example.com/m.@s.go
+-- occurrences
+s.go:4:2 import fmt  in example.com/m
+s.go:5:6 import strings  in example.com/m
+s.go:8:6 definition example.com/m.Shape  in example.com/m
+s.go:9:2 definition example.com/m.Shape.Area  in example.com/m
+s.go:10:6 type_use fmt.Stringer  in example.com/m
+s.go:13:6 definition example.com/m.Base  in example.com/m
+s.go:13:19 definition example.com/m.Base.ID  in example.com/m
+s.go:15:7 definition example.com/m.Base.SetID#recv  in example.com/m.Base.SetID
+s.go:15:10 type_use example.com/m.Base  in example.com/m.Base.SetID
+s.go:15:16 definition example.com/m.Base.SetID  in example.com/m
+s.go:15:22 definition example.com/m.Base.SetID#param0  in example.com/m.Base.SetID
+s.go:15:32 write_partial example.com/m.Base.SetID#recv  in example.com/m.Base.SetID
+s.go:15:34 write example.com/m.Base.ID  in example.com/m.Base.SetID
+s.go:15:39 read example.com/m.Base.SetID#param0 flow=example.com/m.Base.ID  in example.com/m.Base.SetID
+s.go:17:6 definition example.com/m.Circle  in example.com/m
+s.go:18:2 definition example.com/m.Circle.Base  in example.com/m
+s.go:18:2 type_use example.com/m.Base  in example.com/m
+s.go:19:2 definition example.com/m.Circle.R  in example.com/m
+s.go:20:2 definition example.com/m.Circle.Meta  in example.com/m
+s.go:20:15 definition example.com/m.Circle.Meta.Tag  in example.com/m
+s.go:23:7 definition example.com/m.Circle.Area#recv  in example.com/m.Circle.Area
+s.go:23:9 type_use example.com/m.Circle  in example.com/m.Circle.Area
+s.go:23:17 definition example.com/m.Circle.Area  in example.com/m
+s.go:23:42 read example.com/m.Circle.Area#recv  in example.com/m.Circle.Area
+s.go:23:44 read example.com/m.Circle.R flow=example.com/m.Circle.Area#result0  in example.com/m.Circle.Area
+s.go:24:7 definition example.com/m.Circle.String#recv  in example.com/m.Circle.String
+s.go:24:9 type_use example.com/m.Circle  in example.com/m.Circle.String
+s.go:24:17 definition example.com/m.Circle.String  in example.com/m
+s.go:24:46 call strings.ToUpper dispatch=static call=1  in example.com/m.Circle.String
+s.go:26:6 definition example.com/m.Alias  in example.com/m
+s.go:26:14 type_use example.com/m.Circle  in example.com/m
+s.go:28:6 definition example.com/m.List  in example.com/m
+s.go:28:11 definition example.com/m.List[T]  in example.com/m
+s.go:28:26 definition example.com/m.List.items  in example.com/m
+s.go:28:34 type_use example.com/m.List[T]  in example.com/m
+s.go:30:7 definition example.com/m.List.Add#recv  in example.com/m.List.Add
+s.go:30:10 type_use example.com/m.List targs=[T]  in example.com/m.List.Add
+s.go:30:15 definition example.com/m.List.Add[T]  in example.com/m.List.Add
+s.go:30:19 definition example.com/m.List.Add  in example.com/m
+s.go:30:23 definition example.com/m.List.Add#param0  in example.com/m.List.Add
+s.go:30:25 type_use example.com/m.List.Add[T]  in example.com/m.List.Add
+s.go:30:30 write_partial example.com/m.List.Add#recv  in example.com/m.List.Add
+s.go:30:32 write example.com/m.List.items  in example.com/m.List.Add
+s.go:30:47 read example.com/m.List.Add#recv  in example.com/m.List.Add
+s.go:30:49 read example.com/m.List.items  in example.com/m.List.Add
+s.go:30:56 read example.com/m.List.Add#param0  in example.com/m.List.Add
+s.go:32:7 definition example.com/m.Pi  in example.com/m
+s.go:34:5 definition example.com/m.Default  in example.com/m
+s.go:34:13 type_use example.com/m.Shape  in example.com/m.Default
+s.go:34:21 construct example.com/m.Circle  in example.com/m.Default
+s.go:36:6 definition example.com/m.Describe  in example.com/m
+s.go:36:15 definition example.com/m.Describe#param0  in example.com/m.Describe
+s.go:36:17 type_use example.com/m.Shape  in example.com/m.Describe
+s.go:36:24 definition example.com/m.Describe#param1  in example.com/m.Describe
+s.go:36:42 definition example.com/m.Describe#result0  in example.com/m.Describe
+s.go:36:55 definition example.com/m.Describe#result1  in example.com/m.Describe
+s.go:37:7 definition example.com/m.Describe.local@0  in example.com/m.Describe
+s.go:37:21 definition example.com/m.Describe.local@0.n  in example.com/m.Describe
+s.go:38:2 definition example.com/m.Describe::f@0  in example.com/m.Describe
+s.go:38:7 definition example.com/m.Describe$0  in example.com/m.Describe
+s.go:38:12 definition example.com/m.Describe$0#param0 +in_closure  in example.com/m.Describe$0
+s.go:38:32 read example.com/m.Describe$0#param0 +in_closure flow=example.com/m.Describe$0#result0  in example.com/m.Describe$0
+s.go:39:6 read example.com/m.Describe::f@0  in example.com/m.Describe
+s.go:40:9 read example.com/m.Describe#param0  in example.com/m.Describe
+s.go:40:11 call fmt.Stringer.String dispatch=interface call=2  in example.com/m.Describe
+-- method sets
+example.com/m.Base
+  *SetID func(int)
+example.com/m.Circle
+  Area func() float64
+  *SetID func(int) (promoted)
+  String func() string
+example.com/m.Shape (interface)
+  Area func() float64
+  String func() string
+-- externals
+package fmt
+type fmt.Stringer  interface
+method fmt.Stringer.String  func() string
+package strings
+func strings.ToUpper  func(s string) string
+

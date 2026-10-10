@@ -1,0 +1,333 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- c.go --
+package m
+
+import (
+	"fmt"
+	"sync"
+)
+
+type User struct{ Name string }
+
+type Store interface{ Save(u *User) error }
+
+type memStore struct{ users []*User }
+
+func (s *memStore) Save(u *User) error { s.users = append(s.users, u); return nil }
+
+// CreateUser is the "handler" example: build, persist, return.
+func CreateUser(st Store, name string) (*User, error) {
+	u := &User{Name: name}
+	if err := st.Save(u); err != nil {
+		return nil, err
+	}
+	return u, nil
+}
+
+func foo(a int) int {
+	b := a
+	bar(b, a)
+	return b
+}
+
+func bar(x, y int) {}
+
+func Map[A, B any](xs []A, f func(A) B) []B {
+	var out []B
+	for _, x := range xs {
+		out = append(out, f(x))
+	}
+	return out
+}
+
+func dispatch(st Store, fn func(int), fns []func(), m map[string]func()) {
+	st.Save(nil)
+	fn(1)
+	fns[0]()
+	m["k"]()
+	getFn()()
+	func() { fmt.Println("iife") }()
+	handler := foo
+	_ = handler
+	_ = Map[int, string](nil, nil)
+	_ = Map(nil, func(int) string { return "" })
+}
+
+func getFn() func() { return nil }
+
+func concurrency(mu *sync.Mutex, ch chan int) {
+	total := 0
+	mu.Lock()
+	defer mu.Unlock()
+	defer func() { total++ }()
+	go func() {
+		total += 1
+		ch <- total
+	}()
+	go bar(1, 2)
+	for i := 0; i < 3; i++ {
+		if i > 1 && total > 0 {
+			bar(i, total)
+		}
+		switch i {
+		case 0:
+			bar(0, 0)
+		}
+		func() { total-- }()
+	}
+	_ = memStore{}.users
+}
+-- want.txt --
+package example.com/m (m)
+imports fmt
+imports sync
+file c.go
+-- symbols
+package example.com/m
+file example.com/m.@c.go
+func example.com/m.CreateUser  func(st example.com/m.Store, name string) (*example.com/m.User, error)  @c.go:17:6  decl=17-23
+param example.com/m.CreateUser#param0  example.com/m.Store  @c.go:17:17
+param example.com/m.CreateUser#param1  string  @c.go:17:27
+result example.com/m.CreateUser#result0  *example.com/m.User
+result example.com/m.CreateUser#result1  error
+local example.com/m.CreateUser::err@0  error  @c.go:19:5
+local example.com/m.CreateUser::u@0  *example.com/m.User  @c.go:18:2
+func example.com/m.Map  func[A, B any](xs []A, f func(A) B) []B  @c.go:33:6  decl=33-39
+param example.com/m.Map#param0  []A  @c.go:33:20
+param example.com/m.Map#param1  func(A) B  @c.go:33:28
+result example.com/m.Map#result0  []B
+local example.com/m.Map::out@0  []B  @c.go:34:6  decl=34-34
+local example.com/m.Map::x@0  A  @c.go:35:9
+type_param example.com/m.Map[A]  any  @c.go:33:10
+type_param example.com/m.Map[B]  any  @c.go:33:13
+type example.com/m.Store  interface  @c.go:10:6  decl=10-10
+method example.com/m.Store.Save  func(u *example.com/m.User) error  @c.go:10:23
+type example.com/m.User  struct  @c.go:8:6  decl=8-8
+field example.com/m.User.Name  string  @c.go:8:19
+func example.com/m.bar  func(x int, y int)  @c.go:31:6  decl=31-31
+param example.com/m.bar#param0  int  @c.go:31:10
+param example.com/m.bar#param1  int  @c.go:31:13
+func example.com/m.concurrency  func(mu *sync.Mutex, ch chan int)  @c.go:56:6  decl=56-77
+param example.com/m.concurrency#param0  *sync.Mutex  @c.go:56:18
+param example.com/m.concurrency#param1  chan int  @c.go:56:34
+func_lit example.com/m.concurrency$0  func()  @c.go:60:8  decl=60-60
+func_lit example.com/m.concurrency$1  func()  @c.go:61:5  decl=61-64
+func_lit example.com/m.concurrency$2  func()  @c.go:74:3  decl=74-74
+local example.com/m.concurrency::i@0  int  @c.go:66:6
+local example.com/m.concurrency::total@0  int  @c.go:57:2
+func example.com/m.dispatch  func(st example.com/m.Store, fn func(int), fns []func(), m map[string]func())  @c.go:41:6  decl=41-52
+param example.com/m.dispatch#param0  example.com/m.Store  @c.go:41:15
+param example.com/m.dispatch#param1  func(int)  @c.go:41:25
+param example.com/m.dispatch#param2  []func()  @c.go:41:39
+param example.com/m.dispatch#param3  map[string]func()  @c.go:41:53
+func_lit example.com/m.dispatch$0  func()  @c.go:47:2  decl=47-47
+func_lit example.com/m.dispatch$1  func(int) string  @c.go:51:15  decl=51-51
+param example.com/m.dispatch$1#param0  int
+result example.com/m.dispatch$1#result0  string
+local example.com/m.dispatch::handler@0  func(a int) int  @c.go:48:2
+func example.com/m.foo  func(a int) int  @c.go:25:6  decl=25-29
+param example.com/m.foo#param0  int  @c.go:25:10
+result example.com/m.foo#result0  int
+local example.com/m.foo::b@0  int  @c.go:26:2
+func example.com/m.getFn  func() func()  @c.go:54:6  decl=54-54
+result example.com/m.getFn#result0  func()
+type example.com/m.memStore  struct  @c.go:12:6  decl=12-12
+method example.com/m.memStore.Save  func(u *example.com/m.User) error  @c.go:14:20  decl=14-14
+param example.com/m.memStore.Save#param0  *example.com/m.User  @c.go:14:25
+param example.com/m.memStore.Save#recv  *example.com/m.memStore  @c.go:14:7
+result example.com/m.memStore.Save#result0  error
+field example.com/m.memStore.users  []*example.com/m.User  @c.go:12:23
+-- edges
+contains example.com/m -> example.com/m.CreateUser
+contains example.com/m -> example.com/m.Map
+contains example.com/m -> example.com/m.Store
+contains example.com/m -> example.com/m.User
+contains example.com/m -> example.com/m.bar
+contains example.com/m -> example.com/m.concurrency
+contains example.com/m -> example.com/m.dispatch
+contains example.com/m -> example.com/m.foo
+contains example.com/m -> example.com/m.getFn
+contains example.com/m -> example.com/m.memStore
+contains example.com/m.CreateUser -> example.com/m.CreateUser::err@0
+contains example.com/m.CreateUser -> example.com/m.CreateUser::u@0
+contains example.com/m.Map -> example.com/m.Map::out@0
+contains example.com/m.Map -> example.com/m.Map::x@0
+contains example.com/m.concurrency -> example.com/m.concurrency$0
+contains example.com/m.concurrency -> example.com/m.concurrency$1
+contains example.com/m.concurrency -> example.com/m.concurrency$2
+contains example.com/m.concurrency -> example.com/m.concurrency::i@0
+contains example.com/m.concurrency -> example.com/m.concurrency::total@0
+contains example.com/m.dispatch -> example.com/m.dispatch$0
+contains example.com/m.dispatch -> example.com/m.dispatch$1
+contains example.com/m.dispatch -> example.com/m.dispatch::handler@0
+contains example.com/m.foo -> example.com/m.foo::b@0
+has_param example.com/m.CreateUser -> example.com/m.CreateUser#param0
+has_param example.com/m.CreateUser -> example.com/m.CreateUser#param1
+has_param example.com/m.Map -> example.com/m.Map#param0
+has_param example.com/m.Map -> example.com/m.Map#param1
+has_param example.com/m.bar -> example.com/m.bar#param0
+has_param example.com/m.bar -> example.com/m.bar#param1
+has_param example.com/m.concurrency -> example.com/m.concurrency#param0
+has_param example.com/m.concurrency -> example.com/m.concurrency#param1
+has_param example.com/m.dispatch -> example.com/m.dispatch#param0
+has_param example.com/m.dispatch -> example.com/m.dispatch#param1
+has_param example.com/m.dispatch -> example.com/m.dispatch#param2
+has_param example.com/m.dispatch -> example.com/m.dispatch#param3
+has_param example.com/m.dispatch$1 -> example.com/m.dispatch$1#param0
+has_param example.com/m.foo -> example.com/m.foo#param0
+has_param example.com/m.memStore.Save -> example.com/m.memStore.Save#param0
+has_param example.com/m.memStore.Save -> example.com/m.memStore.Save#recv
+has_result example.com/m.CreateUser -> example.com/m.CreateUser#result0
+has_result example.com/m.CreateUser -> example.com/m.CreateUser#result1
+has_result example.com/m.Map -> example.com/m.Map#result0
+has_result example.com/m.dispatch$1 -> example.com/m.dispatch$1#result0
+has_result example.com/m.foo -> example.com/m.foo#result0
+has_result example.com/m.getFn -> example.com/m.getFn#result0
+has_result example.com/m.memStore.Save -> example.com/m.memStore.Save#result0
+has_field example.com/m.User -> example.com/m.User.Name
+has_field example.com/m.memStore -> example.com/m.memStore.users
+has_method example.com/m.Store -> example.com/m.Store.Save
+has_method example.com/m.memStore -> example.com/m.memStore.Save
+type_param example.com/m.Map -> example.com/m.Map[A]
+type_param example.com/m.Map -> example.com/m.Map[B]
+file example.com/m -> example.com/m.@c.go
+-- occurrences
+c.go:4:2 import fmt  in example.com/m
+c.go:5:2 import sync  in example.com/m
+c.go:8:6 definition example.com/m.User  in example.com/m
+c.go:8:19 definition example.com/m.User.Name  in example.com/m
+c.go:10:6 definition example.com/m.Store  in example.com/m
+c.go:10:23 definition example.com/m.Store.Save  in example.com/m
+c.go:10:31 type_use example.com/m.User  in example.com/m
+c.go:12:6 definition example.com/m.memStore  in example.com/m
+c.go:12:23 definition example.com/m.memStore.users  in example.com/m
+c.go:12:32 type_use example.com/m.User  in example.com/m
+c.go:14:7 definition example.com/m.memStore.Save#recv  in example.com/m.memStore.Save
+c.go:14:10 type_use example.com/m.memStore  in example.com/m.memStore.Save
+c.go:14:20 definition example.com/m.memStore.Save  in example.com/m
+c.go:14:25 definition example.com/m.memStore.Save#param0  in example.com/m.memStore.Save
+c.go:14:28 type_use example.com/m.User  in example.com/m.memStore.Save
+c.go:14:42 write_partial example.com/m.memStore.Save#recv  in example.com/m.memStore.Save
+c.go:14:44 write example.com/m.memStore.users  in example.com/m.memStore.Save
+c.go:14:59 read example.com/m.memStore.Save#recv  in example.com/m.memStore.Save
+c.go:14:61 read example.com/m.memStore.users  in example.com/m.memStore.Save
+c.go:14:68 read example.com/m.memStore.Save#param0  in example.com/m.memStore.Save
+c.go:17:6 definition example.com/m.CreateUser  in example.com/m
+c.go:17:17 definition example.com/m.CreateUser#param0  in example.com/m.CreateUser
+c.go:17:20 type_use example.com/m.Store  in example.com/m.CreateUser
+c.go:17:27 definition example.com/m.CreateUser#param1  in example.com/m.CreateUser
+c.go:17:42 type_use example.com/m.User  in example.com/m.CreateUser
+c.go:18:2 definition example.com/m.CreateUser::u@0  in example.com/m.CreateUser
+c.go:18:8 construct example.com/m.User  in example.com/m.CreateUser
+c.go:18:13 write example.com/m.User.Name +init_key  in example.com/m.CreateUser
+c.go:18:19 read example.com/m.CreateUser#param1 flow=example.com/m.User.Name  in example.com/m.CreateUser
+c.go:19:5 definition example.com/m.CreateUser::err@0  in example.com/m.CreateUser
+c.go:19:12 read example.com/m.CreateUser#param0  in example.com/m.CreateUser
+c.go:19:15 call example.com/m.Store.Save dispatch=interface call=1  in example.com/m.CreateUser
+c.go:19:20 read example.com/m.CreateUser::u@0 arg=1#0  in example.com/m.CreateUser
+c.go:19:24 read example.com/m.CreateUser::err@0  in example.com/m.CreateUser
+c.go:20:15 read example.com/m.CreateUser::err@0 +in_branch flow=example.com/m.CreateUser#result1  in example.com/m.CreateUser
+c.go:22:9 read example.com/m.CreateUser::u@0 flow=example.com/m.CreateUser#result0  in example.com/m.CreateUser
+c.go:25:6 definition example.com/m.foo  in example.com/m
+c.go:25:10 definition example.com/m.foo#param0  in example.com/m.foo
+c.go:26:2 definition example.com/m.foo::b@0  in example.com/m.foo
+c.go:26:7 read example.com/m.foo#param0 flow=example.com/m.foo::b@0  in example.com/m.foo
+c.go:27:2 call example.com/m.bar dispatch=static call=2  in example.com/m.foo
+c.go:27:6 read example.com/m.foo::b@0 arg=2#0  in example.com/m.foo
+c.go:27:9 read example.com/m.foo#param0 arg=2#1  in example.com/m.foo
+c.go:28:9 read example.com/m.foo::b@0 flow=example.com/m.foo#result0  in example.com/m.foo
+c.go:31:6 definition example.com/m.bar  in example.com/m
+c.go:31:10 definition example.com/m.bar#param0  in example.com/m.bar
+c.go:31:13 definition example.com/m.bar#param1  in example.com/m.bar
+c.go:33:6 definition example.com/m.Map  in example.com/m
+c.go:33:10 definition example.com/m.Map[A]  in example.com/m.Map
+c.go:33:13 definition example.com/m.Map[B]  in example.com/m.Map
+c.go:33:20 definition example.com/m.Map#param0  in example.com/m.Map
+c.go:33:25 type_use example.com/m.Map[A]  in example.com/m.Map
+c.go:33:28 definition example.com/m.Map#param1  in example.com/m.Map
+c.go:33:35 type_use example.com/m.Map[A]  in example.com/m.Map
+c.go:33:38 type_use example.com/m.Map[B]  in example.com/m.Map
+c.go:33:43 type_use example.com/m.Map[B]  in example.com/m.Map
+c.go:34:6 definition example.com/m.Map::out@0  in example.com/m.Map
+c.go:34:12 type_use example.com/m.Map[B]  in example.com/m.Map
+c.go:35:9 definition example.com/m.Map::x@0  in example.com/m.Map
+c.go:35:20 read example.com/m.Map#param0  in example.com/m.Map
+c.go:36:3 write example.com/m.Map::out@0 +in_loop  in example.com/m.Map
+c.go:36:16 read example.com/m.Map::out@0 +in_loop  in example.com/m.Map
+c.go:36:21 call example.com/m.Map#param1 dispatch=dynamic +in_loop call=3  in example.com/m.Map
+c.go:36:23 read example.com/m.Map::x@0 +in_loop arg=3#0  in example.com/m.Map
+c.go:38:9 read example.com/m.Map::out@0 flow=example.com/m.Map#result0  in example.com/m.Map
+c.go:41:6 definition example.com/m.dispatch  in example.com/m
+c.go:41:15 definition example.com/m.dispatch#param0  in example.com/m.dispatch
+c.go:41:18 type_use example.com/m.Store  in example.com/m.dispatch
+c.go:41:25 definition example.com/m.dispatch#param1  in example.com/m.dispatch
+c.go:41:39 definition example.com/m.dispatch#param2  in example.com/m.dispatch
+c.go:41:53 definition example.com/m.dispatch#param3  in example.com/m.dispatch
+c.go:42:2 read example.com/m.dispatch#param0  in example.com/m.dispatch
+c.go:42:5 call example.com/m.Store.Save dispatch=interface call=4  in example.com/m.dispatch
+c.go:43:2 call example.com/m.dispatch#param1 dispatch=dynamic call=5  in example.com/m.dispatch
+c.go:44:2 read example.com/m.dispatch#param2  in example.com/m.dispatch
+c.go:44:2 call <unknown> dispatch=dynamic call=6  in example.com/m.dispatch
+c.go:45:2 read example.com/m.dispatch#param3  in example.com/m.dispatch
+c.go:45:2 call <unknown> dispatch=dynamic call=7  in example.com/m.dispatch
+c.go:46:2 call example.com/m.getFn dispatch=static call=9  in example.com/m.dispatch
+c.go:46:2 call <unknown> dispatch=dynamic call=8  in example.com/m.dispatch
+c.go:47:2 definition example.com/m.dispatch$0  in example.com/m.dispatch
+c.go:47:2 call example.com/m.dispatch$0 dispatch=static call=10  in example.com/m.dispatch
+c.go:47:15 call fmt.Println dispatch=static +in_closure call=11  in example.com/m.dispatch$0
+c.go:48:2 definition example.com/m.dispatch::handler@0  in example.com/m.dispatch
+c.go:48:13 value_ref example.com/m.foo flow=example.com/m.dispatch::handler@0  in example.com/m.dispatch
+c.go:49:6 read example.com/m.dispatch::handler@0  in example.com/m.dispatch
+c.go:50:6 call example.com/m.Map dispatch=static call=12 targs=[int, string]  in example.com/m.dispatch
+c.go:51:6 call example.com/m.Map dispatch=static call=13 targs=[int, string]  in example.com/m.dispatch
+c.go:51:15 definition example.com/m.dispatch$1  in example.com/m.dispatch
+c.go:54:6 definition example.com/m.getFn  in example.com/m
+c.go:56:6 definition example.com/m.concurrency  in example.com/m
+c.go:56:18 definition example.com/m.concurrency#param0  in example.com/m.concurrency
+c.go:56:27 type_use sync.Mutex  in example.com/m.concurrency
+c.go:56:34 definition example.com/m.concurrency#param1  in example.com/m.concurrency
+c.go:57:2 definition example.com/m.concurrency::total@0  in example.com/m.concurrency
+c.go:58:2 read example.com/m.concurrency#param0  in example.com/m.concurrency
+c.go:58:5 call sync.Mutex.Lock dispatch=static call=14  in example.com/m.concurrency
+c.go:59:8 read example.com/m.concurrency#param0  in example.com/m.concurrency
+c.go:59:11 call sync.Mutex.Unlock dispatch=static +defer call=15  in example.com/m.concurrency
+c.go:60:8 definition example.com/m.concurrency$0  in example.com/m.concurrency
+c.go:60:8 call example.com/m.concurrency$0 dispatch=static +defer call=16  in example.com/m.concurrency
+c.go:60:17 read_write example.com/m.concurrency::total@0 +in_closure +in_defer +captured  in example.com/m.concurrency$0
+c.go:61:5 definition example.com/m.concurrency$1  in example.com/m.concurrency
+c.go:61:5 call example.com/m.concurrency$1 dispatch=static +go call=17  in example.com/m.concurrency
+c.go:62:3 read_write example.com/m.concurrency::total@0 +in_closure +in_go +captured  in example.com/m.concurrency$1
+c.go:63:3 read example.com/m.concurrency#param1 +in_closure +in_go +captured  in example.com/m.concurrency$1
+c.go:63:9 read example.com/m.concurrency::total@0 +in_closure +in_go +captured  in example.com/m.concurrency$1
+c.go:65:5 call example.com/m.bar dispatch=static +go call=18  in example.com/m.concurrency
+c.go:66:6 definition example.com/m.concurrency::i@0  in example.com/m.concurrency
+c.go:66:14 read example.com/m.concurrency::i@0 +in_loop  in example.com/m.concurrency
+c.go:66:21 read_write example.com/m.concurrency::i@0 +in_loop  in example.com/m.concurrency
+c.go:67:6 read example.com/m.concurrency::i@0 +in_loop  in example.com/m.concurrency
+c.go:67:15 read example.com/m.concurrency::total@0 +in_loop +in_branch  in example.com/m.concurrency
+c.go:68:4 call example.com/m.bar dispatch=static +in_loop +in_branch call=19  in example.com/m.concurrency
+c.go:68:8 read example.com/m.concurrency::i@0 +in_loop +in_branch arg=19#0  in example.com/m.concurrency
+c.go:68:11 read example.com/m.concurrency::total@0 +in_loop +in_branch arg=19#1  in example.com/m.concurrency
+c.go:70:10 read example.com/m.concurrency::i@0 +in_loop  in example.com/m.concurrency
+c.go:72:4 call example.com/m.bar dispatch=static +in_loop +in_branch call=20  in example.com/m.concurrency
+c.go:74:3 definition example.com/m.concurrency$2 +in_loop  in example.com/m.concurrency
+c.go:74:3 call example.com/m.concurrency$2 dispatch=static +in_loop call=21  in example.com/m.concurrency
+c.go:74:12 read_write example.com/m.concurrency::total@0 +in_closure +captured  in example.com/m.concurrency$2
+c.go:76:6 construct example.com/m.memStore  in example.com/m.concurrency
+c.go:76:17 read example.com/m.memStore.users  in example.com/m.concurrency
+-- method sets
+example.com/m.Store (interface)
+  Save func(*example.com/m.User) error
+example.com/m.memStore
+  *Save func(*example.com/m.User) error
+-- externals
+package fmt
+func fmt.Println  func(a ...any) (n int, err error)
+package sync
+type sync.Mutex  struct
+method sync.Mutex.Lock  func()
+method sync.Mutex.Unlock  func()
+

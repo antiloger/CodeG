@@ -1,0 +1,41 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- b.go --
+package m
+
+func ok() int { return 1 }
+
+func bad() int {
+	x := ok()
+	return x + undefinedName
+}
+-- want.txt --
+package example.com/m (m) has_errors
+diag b.go:7:13 undefined: undefinedName
+file b.go
+-- symbols
+package example.com/m
+file example.com/m.@b.go
+func example.com/m.bad  func() int  @b.go:5:6  decl=5-8
+result example.com/m.bad#result0  int
+local example.com/m.bad::x@0  int  @b.go:6:2
+func example.com/m.ok  func() int  @b.go:3:6  decl=3-3
+result example.com/m.ok#result0  int
+-- edges
+contains example.com/m -> example.com/m.bad
+contains example.com/m -> example.com/m.ok
+contains example.com/m.bad -> example.com/m.bad::x@0
+has_result example.com/m.bad -> example.com/m.bad#result0
+has_result example.com/m.ok -> example.com/m.ok#result0
+file example.com/m -> example.com/m.@b.go
+-- occurrences
+b.go:3:6 definition example.com/m.ok  in example.com/m
+b.go:5:6 definition example.com/m.bad  in example.com/m
+b.go:6:2 definition example.com/m.bad::x@0  in example.com/m.bad
+b.go:6:7 call example.com/m.ok dispatch=static call=1  in example.com/m.bad
+b.go:7:9 read example.com/m.bad::x@0  in example.com/m.bad
+-- method sets
+-- externals
+

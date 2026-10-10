@@ -1,0 +1,205 @@
+-- go.mod --
+module example.com/m
+
+go 1.24
+-- r.go --
+package m
+
+type Point struct{ X, Y int }
+
+type Line struct {
+	A, B Point
+	Tags []string
+}
+
+func (p *Point) Move(dx int) { p.X += dx }
+func (p Point) Len() int     { return p.X }
+
+var counter int
+
+func roles(l Line, pp *Point, m map[string]int, xs []int) {
+	var v Point
+	v = Point{X: 1, Y: 2} // whole overwrite, keyed construct
+	v.X = 3               // partial write of v, write of X
+	l.A.Y = 4             // nested: l and A partial, Y write
+	xs[0] = 5             // xs partial
+	m["k"] = 6            // m partial
+	counter++             // read_write
+	counter += 2          // read_write
+	*pp = v               // pp is read: the write target is unknown
+	pp.X = 7              // pp partial (pointer root), X write
+
+	p := &v      // address_taken
+	q := &l.B.X  // address_taken on l, B, X
+	v.Move(1)    // implicit &v
+	pp.Move(1)   // pp is already a pointer: read
+	_ = v.Len()  // value receiver: read
+	_, _ = p, q
+
+	np := new(Point)         // construct
+	lp := &Line{Tags: nil}   // construct + init key
+	var s Line               // type_use
+	ps := []Point{{X: 1}}    // type_use in a slice literal, not construct
+	_, _, _, _ = np, lp, s, ps
+
+	for i := range xs { // define i
+		xs[i] = i
+	}
+	for i = 0; false; {
+	}
+}
+
+var i int
+-- want.txt --
+package example.com/m (m)
+file r.go
+-- symbols
+package example.com/m
+file example.com/m.@r.go
+type example.com/m.Line  struct  @r.go:5:6  decl=5-8
+field example.com/m.Line.A  example.com/m.Point  @r.go:6:2
+field example.com/m.Line.B  example.com/m.Point  @r.go:6:5
+field example.com/m.Line.Tags  []string  @r.go:7:2
+type example.com/m.Point  struct  @r.go:3:6  decl=3-3
+method example.com/m.Point.Len  func() int  @r.go:11:16  decl=11-11
+param example.com/m.Point.Len#recv  example.com/m.Point  @r.go:11:7
+result example.com/m.Point.Len#result0  int
+method example.com/m.Point.Move  func(dx int)  @r.go:10:17  decl=10-10
+param example.com/m.Point.Move#param0  int  @r.go:10:22
+param example.com/m.Point.Move#recv  *example.com/m.Point  @r.go:10:7
+field example.com/m.Point.X  int  @r.go:3:20
+field example.com/m.Point.Y  int  @r.go:3:23
+var example.com/m.counter  int  @r.go:13:5  decl=13-13
+var example.com/m.i  int  @r.go:47:5  decl=47-47
+func example.com/m.roles  func(l example.com/m.Line, pp *example.com/m.Point, m map[string]int, xs []int)  @r.go:15:6  decl=15-45
+param example.com/m.roles#param0  example.com/m.Line  @r.go:15:12
+param example.com/m.roles#param1  *example.com/m.Point  @r.go:15:20
+param example.com/m.roles#param2  map[string]int  @r.go:15:31
+param example.com/m.roles#param3  []int  @r.go:15:49
+local example.com/m.roles::i@0  int  @r.go:40:6
+local example.com/m.roles::lp@0  *example.com/m.Line  @r.go:35:2
+local example.com/m.roles::np@0  *example.com/m.Point  @r.go:34:2
+local example.com/m.roles::p@0  *example.com/m.Point  @r.go:27:2
+local example.com/m.roles::ps@0  []example.com/m.Point  @r.go:37:2
+local example.com/m.roles::q@0  *int  @r.go:28:2
+local example.com/m.roles::s@0  example.com/m.Line  @r.go:36:6  decl=36-36
+local example.com/m.roles::v@0  example.com/m.Point  @r.go:16:6  decl=16-16
+-- edges
+contains example.com/m -> example.com/m.Line
+contains example.com/m -> example.com/m.Point
+contains example.com/m -> example.com/m.counter
+contains example.com/m -> example.com/m.i
+contains example.com/m -> example.com/m.roles
+contains example.com/m.roles -> example.com/m.roles::i@0
+contains example.com/m.roles -> example.com/m.roles::lp@0
+contains example.com/m.roles -> example.com/m.roles::np@0
+contains example.com/m.roles -> example.com/m.roles::p@0
+contains example.com/m.roles -> example.com/m.roles::ps@0
+contains example.com/m.roles -> example.com/m.roles::q@0
+contains example.com/m.roles -> example.com/m.roles::s@0
+contains example.com/m.roles -> example.com/m.roles::v@0
+has_param example.com/m.Point.Len -> example.com/m.Point.Len#recv
+has_param example.com/m.Point.Move -> example.com/m.Point.Move#param0
+has_param example.com/m.Point.Move -> example.com/m.Point.Move#recv
+has_param example.com/m.roles -> example.com/m.roles#param0
+has_param example.com/m.roles -> example.com/m.roles#param1
+has_param example.com/m.roles -> example.com/m.roles#param2
+has_param example.com/m.roles -> example.com/m.roles#param3
+has_result example.com/m.Point.Len -> example.com/m.Point.Len#result0
+has_field example.com/m.Line -> example.com/m.Line.A
+has_field example.com/m.Line -> example.com/m.Line.B
+has_field example.com/m.Line -> example.com/m.Line.Tags
+has_field example.com/m.Point -> example.com/m.Point.X
+has_field example.com/m.Point -> example.com/m.Point.Y
+has_method example.com/m.Point -> example.com/m.Point.Len
+has_method example.com/m.Point -> example.com/m.Point.Move
+file example.com/m -> example.com/m.@r.go
+-- occurrences
+r.go:3:6 definition example.com/m.Point  in example.com/m
+r.go:3:20 definition example.com/m.Point.X  in example.com/m
+r.go:3:23 definition example.com/m.Point.Y  in example.com/m
+r.go:5:6 definition example.com/m.Line  in example.com/m
+r.go:6:2 definition example.com/m.Line.A  in example.com/m
+r.go:6:5 definition example.com/m.Line.B  in example.com/m
+r.go:6:7 type_use example.com/m.Point  in example.com/m
+r.go:7:2 definition example.com/m.Line.Tags  in example.com/m
+r.go:10:7 definition example.com/m.Point.Move#recv  in example.com/m.Point.Move
+r.go:10:10 type_use example.com/m.Point  in example.com/m.Point.Move
+r.go:10:17 definition example.com/m.Point.Move  in example.com/m
+r.go:10:22 definition example.com/m.Point.Move#param0  in example.com/m.Point.Move
+r.go:10:32 write_partial example.com/m.Point.Move#recv  in example.com/m.Point.Move
+r.go:10:34 read_write example.com/m.Point.X  in example.com/m.Point.Move
+r.go:10:39 read example.com/m.Point.Move#param0 flow=example.com/m.Point.X  in example.com/m.Point.Move
+r.go:11:7 definition example.com/m.Point.Len#recv  in example.com/m.Point.Len
+r.go:11:9 type_use example.com/m.Point  in example.com/m.Point.Len
+r.go:11:16 definition example.com/m.Point.Len  in example.com/m
+r.go:11:39 read example.com/m.Point.Len#recv  in example.com/m.Point.Len
+r.go:11:41 read example.com/m.Point.X flow=example.com/m.Point.Len#result0  in example.com/m.Point.Len
+r.go:13:5 definition example.com/m.counter  in example.com/m
+r.go:15:6 definition example.com/m.roles  in example.com/m
+r.go:15:12 definition example.com/m.roles#param0  in example.com/m.roles
+r.go:15:14 type_use example.com/m.Line  in example.com/m.roles
+r.go:15:20 definition example.com/m.roles#param1  in example.com/m.roles
+r.go:15:24 type_use example.com/m.Point  in example.com/m.roles
+r.go:15:31 definition example.com/m.roles#param2  in example.com/m.roles
+r.go:15:49 definition example.com/m.roles#param3  in example.com/m.roles
+r.go:16:6 definition example.com/m.roles::v@0  in example.com/m.roles
+r.go:16:8 type_use example.com/m.Point  in example.com/m.roles
+r.go:17:2 write example.com/m.roles::v@0  in example.com/m.roles
+r.go:17:6 construct example.com/m.Point  in example.com/m.roles
+r.go:17:12 write example.com/m.Point.X +init_key  in example.com/m.roles
+r.go:17:18 write example.com/m.Point.Y +init_key  in example.com/m.roles
+r.go:18:2 write_partial example.com/m.roles::v@0  in example.com/m.roles
+r.go:18:4 write example.com/m.Point.X  in example.com/m.roles
+r.go:19:2 write_partial example.com/m.roles#param0  in example.com/m.roles
+r.go:19:4 write_partial example.com/m.Line.A  in example.com/m.roles
+r.go:19:6 write example.com/m.Point.Y  in example.com/m.roles
+r.go:20:2 write_partial example.com/m.roles#param3  in example.com/m.roles
+r.go:21:2 write_partial example.com/m.roles#param2  in example.com/m.roles
+r.go:22:2 read_write example.com/m.counter  in example.com/m.roles
+r.go:23:2 read_write example.com/m.counter  in example.com/m.roles
+r.go:24:3 read example.com/m.roles#param1  in example.com/m.roles
+r.go:24:8 read example.com/m.roles::v@0  in example.com/m.roles
+r.go:25:2 write_partial example.com/m.roles#param1  in example.com/m.roles
+r.go:25:5 write example.com/m.Point.X  in example.com/m.roles
+r.go:27:2 definition example.com/m.roles::p@0  in example.com/m.roles
+r.go:27:8 address_taken example.com/m.roles::v@0 flow=example.com/m.roles::p@0  in example.com/m.roles
+r.go:28:2 definition example.com/m.roles::q@0  in example.com/m.roles
+r.go:28:8 address_taken example.com/m.roles#param0  in example.com/m.roles
+r.go:28:10 address_taken example.com/m.Line.B  in example.com/m.roles
+r.go:28:12 address_taken example.com/m.Point.X flow=example.com/m.roles::q@0  in example.com/m.roles
+r.go:29:2 address_taken example.com/m.roles::v@0  in example.com/m.roles
+r.go:29:4 call example.com/m.Point.Move dispatch=static call=1  in example.com/m.roles
+r.go:30:2 read example.com/m.roles#param1  in example.com/m.roles
+r.go:30:5 call example.com/m.Point.Move dispatch=static call=2  in example.com/m.roles
+r.go:31:6 read example.com/m.roles::v@0  in example.com/m.roles
+r.go:31:8 call example.com/m.Point.Len dispatch=static call=3  in example.com/m.roles
+r.go:32:9 read example.com/m.roles::p@0  in example.com/m.roles
+r.go:32:12 read example.com/m.roles::q@0  in example.com/m.roles
+r.go:34:2 definition example.com/m.roles::np@0  in example.com/m.roles
+r.go:34:12 construct example.com/m.Point  in example.com/m.roles
+r.go:35:2 definition example.com/m.roles::lp@0  in example.com/m.roles
+r.go:35:9 construct example.com/m.Line  in example.com/m.roles
+r.go:35:14 write example.com/m.Line.Tags +init_key  in example.com/m.roles
+r.go:36:6 definition example.com/m.roles::s@0  in example.com/m.roles
+r.go:36:8 type_use example.com/m.Line  in example.com/m.roles
+r.go:37:2 definition example.com/m.roles::ps@0  in example.com/m.roles
+r.go:37:10 type_use example.com/m.Point  in example.com/m.roles
+r.go:37:17 write example.com/m.Point.X +init_key  in example.com/m.roles
+r.go:38:15 read example.com/m.roles::np@0  in example.com/m.roles
+r.go:38:19 read example.com/m.roles::lp@0  in example.com/m.roles
+r.go:38:23 read example.com/m.roles::s@0  in example.com/m.roles
+r.go:38:26 read example.com/m.roles::ps@0  in example.com/m.roles
+r.go:40:6 definition example.com/m.roles::i@0  in example.com/m.roles
+r.go:40:17 read example.com/m.roles#param3  in example.com/m.roles
+r.go:41:3 write_partial example.com/m.roles#param3 +in_loop  in example.com/m.roles
+r.go:41:6 read example.com/m.roles::i@0 +in_loop  in example.com/m.roles
+r.go:41:11 read example.com/m.roles::i@0 +in_loop flow=example.com/m.roles#param3  in example.com/m.roles
+r.go:43:6 write example.com/m.i  in example.com/m.roles
+r.go:47:5 definition example.com/m.i  in example.com/m
+-- method sets
+example.com/m.Point
+  Len func() int
+  *Move func(int)
+-- externals
+
